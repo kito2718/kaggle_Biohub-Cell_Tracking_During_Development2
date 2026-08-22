@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>GT-Centric Cell Tracking Viewer</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #1a1a1a; color: #eee; }
+    h1 { color: #4fc3f7; margin-top: 0; }
+    .container { display: flex; flex-direction: column; gap: 20px; }
+    .control-panel { background: #2a2a2a; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    select, button { padding: 8px 12px; font-size: 14px; border-radius: 4px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; }
+    .summary-card { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-top: 10px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .metric-box { background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #4fc3f7; position: relative; }
+    .metric-label { font-size: 12px; color: #aaa; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+    .metric-value { font-size: 20px; font-weight: bold; margin-top: 5px; color: #fff; }
+    
+    /* Tooltip styles */
+    .tooltip-icon { display: inline-block; width: 16px; height: 16px; background: #555; color: #fff; border-radius: 50%; text-align: center; font-size: 11px; line-height: 16px; cursor: help; }
+    .tooltip-container { position: relative; display: inline-block; }
+    .tooltip-container .tooltip-text {
+      visibility: hidden; width: 260px; background-color: #444; color: #fff; text-align: left;
+      border-radius: 6px; padding: 8px 12px; position: absolute; z-index: 100; bottom: 125%; left: 50%;
+      transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-size: 12px; font-weight: normal;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-transform: none; line-height: 1.4;
+    }
+    .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+    
+    .legend-panel { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; background: #222; padding: 10px; border-radius: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .color-badge { width: 12px; height: 12px; border-radius: 30%; display: inline-block; }
+    .tp-color { background: #4caf50; }
+    .fn-color { background: #f44336; }
+    .fp-color { background: #ff9800; }
+    .image-viewer { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; }
+    .image-box { text-align: center; background: #222; padding: 10px; border-radius: 6px; }
+    .image-box img { max-width: 300px; height: auto; border: 1px solid #444; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GT-Centric Cell Tracking Viewer</h1>
+    
+    <div class="control-panel">
+      <label for="dataset-select">Dataset: </label>
+      <select id="dataset-select"><option value="">Loading datasets...</option></select>
+    </div>
+
+    <div class="summary-card">
+      <h3>Global Summary Metrics</h3>
+      <div class="summary-grid" id="metrics-grid">
+        <!-- Dynamically populated metrics with tooltips -->
+      </div>
+      
+      <div class="legend-panel" id="legend-panel">
+        <!-- Dynamically populated legend items with tooltips -->
+      </div>
+    </div>
+
+    <div class="image-viewer" id="mips-container">
+      <!-- MIP images for current frame -->
+    </div>
+  </div>
+
+  <script>
+    async function init() {
+      try {
+        const res = await fetch('viewer_data/datasets.json');
+        const data = await res.json();
+        const select = document.getElementById('dataset-select');
+        select.innerHTML = '';
+        data.datasets.forEach(ds => {
+          const opt = document.createElement('option');
+          opt.value = ds;
+          opt.textContent = ds;
+          select.appendChild(opt);
+        });
+        if (data.datasets.length > 0) {
+          loadDataset(data.datasets[0]);
+        }
+        select.addEventListener('change', (e) => loadDataset(e.target.value));
+      } catch (e) {
+        console.error('Failed to load datasets.json', e);
+      }
+    }
+
+    async function loadDataset(datasetName) {
+      try {
+        const res = await fetch(`viewer_data/${datasetName}/viewer_data.json`);
+        const payload = await res.json();
+        renderSummary(payload);
+        renderMIPs(datasetName, 0);
+      } catch (e) {
+        console.error(`Failed to load viewer data for ${datasetName}`, e);
+      }
+    }
+
+    function renderSummary(payload) {
+      const summary = payload.global_summary || {};
+      const tooltips = payload.metadata?.tooltips || {};
+      const grid = document.getElementById('metrics-grid');
+      const legend = document.getElementById('legend-panel');
+
+      grid.innerHTML = `
+        <div class="metric-box">
+          <div class="metric-label">Node Precision</div>
+          <div class="metric-value">${(summary.node_precision || 0).toFixed(4)}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Node Recall</div>
+          <div class="metric-value">${(summary.node_recall || 0).toFixed(4)}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Node F1</div>
+          <div class="metric-value">${(summary.node_f1 || 0).toFixed(4)}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Edge F1</div>
+          <div class="metric-value">${(summary.edge_f1 || 0).toFixed(4)}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">
+            Isolated GT Nodes
+            <span class="tooltip-container">
+              <span class="tooltip-icon">i</span>
+              <span class="tooltip-text">どのエッジとも接続していない孤立GT細胞ノード数 (100%抽出対象)</span>
+            </span>
+          </div>
+          <div class="metric-value">${summary.isolated_gt_nodes_count || 0}</div>
+        </div>
+      `;
+
+      legend.innerHTML = `
+        <div class="legend-item">
+          <span class="color-badge tp-color"></span>
+          <span>GT Node TP</span>
+          <span class="tooltip-container">
+            <span class="tooltip-icon">i</span>
+            <span class="tooltip-text">${tooltips.gt_node_tp || 'GT細胞と予測細胞が一致'}</span>
+          </span>
+        </div>
+        <div class="legend-item">
+          <span class="color-badge fn-color"></span>
+          <span>GT Node FN</span>
+          <span class="tooltip-container">
+            <span class="tooltip-icon">i</span>
+            <span class="tooltip-text">${tooltips.gt_node_fn || 'GT細胞が存在するが検出漏れ'}</span>
+          </span>
+        </div>
+        <div class="legend-item">
+          <span class="color-badge fp-color"></span>
+          <span>Pred Node FP</span>
+          <span class="tooltip-container">
+            <span class="tooltip-icon">i</span>
+            <span class="tooltip-text">${tooltips.pred_node_fp || '予測細胞が存在するがGTが存在しない'}</span>
+          </span>
+        </div>
+        <div class="legend-item">
+          <span style="color:#4caf50">━━</span>
+          <span>Edge TP</span>
+          <span class="tooltip-container">
+            <span class="tooltip-icon">i</span>
+            <span class="tooltip-text">${tooltips.gt_edge_tp || 'トラッキング成功エッジ'}</span>
+          </span>
+        </div>
+        <div class="legend-item">
+          <span style="color:#f44336">━━</span>
+          <span>Edge FN</span>
+          <span class="tooltip-container">
+            <span class="tooltip-icon">i</span>
+            <span class="tooltip-text">${tooltips.gt_edge_fn || '追跡途切れリンク'}</span>
+          </span>
+        </div>
+      `;
+    }
+
+    function renderMIPs(datasetName, frameIdx) {
+      const container = document.getElementById('mips-container');
+      const frameStr = String(frameIdx).padStart(3, '0');
+      container.innerHTML = `
+        <div class="image-box">
+          <div>XY Projection (Z-MIP)</div>
+          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xy.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23333'/><text x='50%' y='50%' fill='%23888' text-anchor='middle'>No MIP Image</text></svg>'">
+        </div>
+        <div class="image-box">
+          <div>XZ Projection (Y-MIP)</div>
+          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23333'/><text x='50%' y='50%' fill='%23888' text-anchor='middle'>No MIP Image</text></svg>'">
+        </div>
+        <div class="image-box">
+          <div>YZ Projection (X-MIP)</div>
+          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_yz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'/><text x='50%' y='50%' fill='%23888' text-anchor='middle'>No MIP Image</text></svg>'">
+        </div>
+      `;
+    }
+
+    init();
+  </script>
+</body>
+</html>
