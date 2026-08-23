@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>GT-Centric Cell Tracking Viewer</title>
-  <style>
+    <html lang="ja">
+    <head>
+      <meta charset="UTF-8">
+      <title>GT-Centric Cell Tracking Viewer</title>
+      <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #1a1a1a; color: #eee; }
     h1 { color: #4fc3f7; margin-top: 0; }
     .container { display: flex; flex-direction: column; gap: 20px; }
@@ -35,10 +35,10 @@
     .image-viewer { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; }
     .image-box { text-align: center; background: #222; padding: 10px; border-radius: 6px; }
     .image-box img { max-width: 300px; height: auto; border: 1px solid #444; }
-  </style>
-</head>
-<body>
-  <div class="container">
+      </style>
+    </head>
+    <body>
+      <div class="container">
     <h1>GT-Centric Cell Tracking Viewer</h1>
     
     <div class="control-panel">
@@ -60,9 +60,9 @@
     <div class="image-viewer" id="mips-container">
       <!-- MIP images for current frame -->
     </div>
-  </div>
+      </div>
 
-  <script>
+      <script>
     async function init() {
       try {
         const res = await fetch('viewer_data/datasets.json');
@@ -180,20 +180,21 @@
       container.innerHTML = `
         <div class="image-box">
           <div>XY Projection (Z-MIP)</div>
-          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xy.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23333'/><text x='50%' y='50%' fill='%23888' text-anchor='middle'>No MIP Image</text></svg>'">
+          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xy.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><rect width=\'200\' height=\'200\' fill=\'%23333\'/><text x=\'50%\' y=\'50%\' fill=\'%23888\' text-anchor=\'middle\'>No MIP Image</text></svg>'">
         </div>
         <div class="image-box">
           <div>XZ Projection (Y-MIP)</div>
-          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23333'/><text x='50%' y='50%' fill='%23888' text-anchor='middle'>No MIP Image</text></svg>'">
+          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><rect width=\'200\' height=\'200\' fill=\'%23333\'/><text x=\'50%\' y=\'50%\' fill=\'%23888\' text-anchor=\'middle\'>No MIP Image</text></svg>'">
         </div>
         <div class="image-box">
           <div>YZ Projection (X-MIP)</div>
-          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_yz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'/><text x='50%' y='50%' fill='%23888' text-anchor='middle'>No MIP Image</text></svg>'">
+          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_yz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'/><text x=\'50%\' y=\'50%\' fill=\'%23888\' text-anchor=\'middle\'>No MIP Image</text></svg>'">
         </div>
       `;
     }
 
     init();
-  </script>
-</body>
-</html>
+      </script>
+    </body>
+    </html>
+    
