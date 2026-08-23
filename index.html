@@ -1,200 +1,315 @@
 <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-      <meta charset="UTF-8">
-      <title>GT-Centric Cell Tracking Viewer</title>
-      <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #1a1a1a; color: #eee; }
-    h1 { color: #4fc3f7; margin-top: 0; }
-    .container { display: flex; flex-direction: column; gap: 20px; }
-    .control-panel { background: #2a2a2a; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-    select, button { padding: 8px 12px; font-size: 14px; border-radius: 4px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; }
-    .summary-card { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-top: 10px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-    .metric-box { background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid #4fc3f7; position: relative; }
-    .metric-label { font-size: 12px; color: #aaa; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
-    .metric-value { font-size: 20px; font-weight: bold; margin-top: 5px; color: #fff; }
-    
-    /* Tooltip styles */
-    .tooltip-icon { display: inline-block; width: 16px; height: 16px; background: #555; color: #fff; border-radius: 50%; text-align: center; font-size: 11px; line-height: 16px; cursor: help; }
-    .tooltip-container { position: relative; display: inline-block; }
-    .tooltip-container .tooltip-text {
-      visibility: hidden; width: 260px; background-color: #444; color: #fff; text-align: left;
-      border-radius: 6px; padding: 8px 12px; position: absolute; z-index: 100; bottom: 125%; left: 50%;
-      transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-size: 12px; font-weight: normal;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-transform: none; line-height: 1.4;
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>GT-Centric Cell Tracking Viewer (Advanced S2.3)</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #e0e0e0; font-size: 12px; }
+    .top-bar { background: #1e1e1e; padding: 8px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
+    h1 { font-size: 16px; color: #4fc3f7; font-weight: 600; margin: 0; }
+    .selector-container { display: flex; align-items: center; gap: 10px; }
+    input[type="text"], select, input[type="number"] { padding: 4px 8px; font-size: 12px; border-radius: 4px; background: #2a2a2a; color: #fff; border: 1px solid #444; }
+    input[type="text"]:focus, select:focus { border-color: #4fc3f7; outline: none; }
+    .summary-bar { display: flex; gap: 10px; padding: 8px 15px; background: #181818; border-bottom: 1px solid #2a2a2a; flex-wrap: wrap; }
+    .card { background: #222; border-radius: 6px; padding: 6px 10px; border-left: 3px solid #4fc3f7; flex: 1; min-width: 130px; position: relative; }
+    .card-title { font-size: 10px; color: #aaa; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; }
+    .card-val { font-size: 15px; font-weight: bold; color: #fff; margin-top: 2px; }
+    .tooltip-icon { display: inline-block; width: 13px; height: 13px; background: #444; color: #fff; border-radius: 50%; text-align: center; font-size: 9px; line-height: 13px; cursor: help; }
+    .tooltip-icon:hover::after {
+      content: attr(data-tooltip); position: absolute; z-index: 1000; bottom: 120%; left: 10px;
+      width: 200px; background: #333; color: #fff; padding: 6px; border-radius: 4px; font-size: 10px;
+      font-weight: normal; text-transform: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 1px solid #555;
     }
-    .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
-    
-    .legend-panel { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; background: #222; padding: 10px; border-radius: 6px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-    .color-badge { width: 12px; height: 12px; border-radius: 30%; display: inline-block; }
-    .tp-color { background: #4caf50; }
-    .fn-color { background: #f44336; }
-    .fp-color { background: #ff9800; }
-    .image-viewer { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; }
-    .image-box { text-align: center; background: #222; padding: 10px; border-radius: 6px; }
-    .image-box img { max-width: 300px; height: auto; border: 1px solid #444; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
+    .player-bar { display: flex; align-items: center; gap: 12px; padding: 6px 15px; background: #1a1a1a; border-bottom: 1px solid #2a2a2a; }
+    .btn { padding: 4px 10px; font-size: 12px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; }
+    .btn:hover { background: #444; border-color: #4fc3f7; }
+    .slider { flex: 1; cursor: pointer; }
+    .frame-badge { font-weight: bold; color: #4fc3f7; min-width: 90px; }
+    .main-grid { display: grid; grid-template-columns: 1fr 300px; gap: 10px; padding: 10px; height: calc(100vh - 140px); overflow: hidden; }
+    .left-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 5px; }
+    .right-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+    .plot-section { background: #1e1e1e; border-radius: 6px; padding: 8px; border: 1px solid #2a2a2a; }
+    .section-header { font-weight: 600; font-size: 12px; color: #4fc3f7; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .plots-3d-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; height: 360px; }
+    .plotly-box { width: 100%; height: 100%; border-radius: 4px; background: #141414; }
+    .mips-2d-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; height: 340px; }
+    .mip-canvas-box { position: relative; width: 100%; height: 100%; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid #333; }
+    .mip-canvas-box canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+    .mip-title { position: absolute; top: 6px; left: 8px; font-size: 11px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 3px; z-index: 10; }
+    .gizmo-overlay { position: absolute; bottom: 8px; right: 8px; width: 45px; height: 45px; pointer-events: none; z-index: 10; }
+    .inspector-card { background: #1e1e1e; border-radius: 6px; padding: 12px; border: 1px solid #333; }
+    .inspector-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .inspector-table td { padding: 4px 6px; border-bottom: 1px solid #2a2a2a; font-size: 11px; }
+    .inspector-table td.label { color: #888; width: 40%; }
+    .inspector-table td.val { color: #fff; font-weight: 600; word-break: break-all; }
+    .badge { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; color: #fff; }
+    .bg-tp { background: #2e7d32; }
+    .bg-fn { background: #c62828; }
+    .bg-fp { background: #ef6c00; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
     <h1>GT-Centric Cell Tracking Viewer</h1>
-    
-    <div class="control-panel">
-      <label for="dataset-select">Dataset: </label>
-      <select id="dataset-select"><option value="">Loading datasets...</option></select>
+    <div class="selector-container">
+      <label>Search:</label>
+      <input type="text" id="dataset-search" placeholder="e.g. no1, no.1, 44b6..." style="width: 140px;">
+      <label>Dataset:</label>
+      <select id="dataset-select" style="min-width: 220px;"><option value="">Loading...</option></select>
     </div>
-
-    <div class="summary-card">
-      <h3>Global Summary Metrics</h3>
-      <div class="summary-grid" id="metrics-grid">
-        <!-- Dynamically populated metrics with tooltips -->
+  </div>
+  <div class="summary-bar" id="summary-bar"></div>
+  <div class="player-bar">
+    <button class="btn" id="btn-play">▶ Play</button>
+    <button class="btn" id="btn-prev">◀ Step</button>
+    <button class="btn" id="btn-next">Step ▶</button>
+    <input type="number" id="frame-input" min="0" value="0" style="width: 55px;">
+    <input type="range" id="frame-slider" class="slider" min="0" max="0" value="0">
+    <span class="frame-badge" id="frame-badge">Frame 0 / 0</span>
+  </div>
+  <div class="main-grid">
+    <div class="left-panel">
+      <div class="plot-section">
+        <div class="section-header">
+          <span>3D Tracking Plots</span>
+          <span style="font-size: 10px; color: #888;">Left: Window (t-1, t, t+1) | Right: Selected Cell Full Lineage</span>
+        </div>
+        <div class="plots-3d-row">
+          <div id="plot-3d-window" class="plotly-box"></div>
+          <div id="plot-3d-lineage" class="plotly-box"></div>
+        </div>
       </div>
-      
-      <div class="legend-panel" id="legend-panel">
-        <!-- Dynamically populated legend items with tooltips -->
+      <div class="plot-section">
+        <div class="section-header">
+          <span>2D MIP Projection Canvas (Overlay GT/Pred & 7μm Highlight Circle)</span>
+          <button class="btn" id="btn-reset-2d" style="font-size: 10px; padding: 2px 6px;">Reset 2D Pan/Zoom</button>
+        </div>
+        <div class="mips-2d-row">
+          <div class="mip-canvas-box">
+            <div class="mip-title">XY Projection (Z-MIP)</div>
+            <canvas id="canvas-xy"></canvas>
+            <canvas class="gizmo-overlay" id="gizmo-xy"></canvas>
+          </div>
+          <div class="mip-canvas-box">
+            <div class="mip-title">XZ Projection (Y-MIP)</div>
+            <canvas id="canvas-xz"></canvas>
+            <canvas class="gizmo-overlay" id="gizmo-xz"></canvas>
+          </div>
+          <div class="mip-canvas-box">
+            <div class="mip-title">YZ Projection (X-MIP)</div>
+            <canvas id="canvas-yz"></canvas>
+            <canvas class="gizmo-overlay" id="gizmo-yz"></canvas>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="image-viewer" id="mips-container">
-      <!-- MIP images for current frame -->
-    </div>
+    <div class="right-panel">
+      <div class="inspector-card">
+        <div class="section-header"><span>Cell Node Inspector</span></div>
+        <table class="inspector-table">
+          <tr><td class="label">Node ID</td><td class="val" id="insp-id">-</td></tr>
+          <tr><td class="label">Status</td><td class="val" id="insp-status">-</td></tr>
+          <tr><td class="label">Frame (t)</td><td class="val" id="insp-frame">-</td></tr>
+          <tr><td class="label">Pos (Z, Y, X μm)</td><td class="val" id="insp-pos">-</td></tr>
+          <tr><td class="label">Parent ID</td><td class="val" id="insp-parent">-</td></tr>
+          <tr><td class="label">Matched Pred ID</td><td class="val" id="insp-pred">-</td></tr>
+        </table>
       </div>
+      <div class="inspector-card">
+        <div class="section-header"><span>Consolidated RAW CSV (All Datasets)</span></div>
+        <div style="font-size: 11px; margin-top: 5px;">
+          <a id="link-csv-nodes" href="viewer_data/gt_nodes.csv" target="_blank" style="color: #4fc3f7; text-decoration: underline; display: block; margin-bottom: 6px;">gt_nodes.csv (All Dataset GT Nodes)</a>
+          <a id="link-csv-edges" href="viewer_data/gt_edges.csv" target="_blank" style="color: #4fc3f7; text-decoration: underline; display: block;">gt_edges.csv (All Dataset GT Edges)</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let allDatasets = []; let currentPayload = null; let currentDatasetName = '';
+    let currentFrame = 0; let maxFrames = 0; let isPlaying = false; let playTimer = null; let selectedNode = null;
+    let zoomScale = 1.0; let panOffset = { x: 0, y: 0 }; let isDragging = false; let dragStart = { x: 0, y: 0 };
 
-      <script>
     async function init() {
       try {
         const res = await fetch('viewer_data/datasets.json');
         const data = await res.json();
-        const select = document.getElementById('dataset-select');
-        select.innerHTML = '';
-        data.datasets.forEach(ds => {
-          const opt = document.createElement('option');
-          opt.value = ds;
-          opt.textContent = ds;
-          select.appendChild(opt);
-        });
-        if (data.datasets.length > 0) {
-          loadDataset(data.datasets[0]);
-        }
-        select.addEventListener('change', (e) => loadDataset(e.target.value));
-      } catch (e) {
-        console.error('Failed to load datasets.json', e);
+        allDatasets = data.datasets || [];
+        populateSelect(allDatasets);
+        document.getElementById('dataset-search').addEventListener('input', (e) => filterDatasets(e.target.value));
+        document.getElementById('dataset-select').addEventListener('change', (e) => loadDataset(e.target.value));
+        setupPlayerControls(); setup2DCanvasEvents();
+      } catch (e) { console.error('Failed to init datasets.json', e); }
+    }
+
+    function populateSelect(list) {
+      const select = document.getElementById('dataset-select'); select.innerHTML = '';
+      list.forEach((ds, idx) => {
+        const opt = document.createElement('option'); opt.value = ds; opt.textContent = `No.${idx + 1}: ${ds}`; select.appendChild(opt);
+      });
+      if (list.length > 0) loadDataset(list[0]);
+    }
+
+    function filterDatasets(query) {
+      const q = query.trim().toLowerCase(); if (!q) { populateSelect(allDatasets); return; }
+      const noMatch = q.match(/^no\.?\s*(\d+)$/);
+      let filtered = [];
+      if (noMatch) {
+        const targetNo = parseInt(noMatch[1]);
+        if (targetNo >= 1 && targetNo <= allDatasets.length) filtered = [allDatasets[targetNo - 1]];
+      } else {
+        filtered = allDatasets.filter(ds => ds.toLowerCase().includes(q));
       }
+      populateSelect(filtered);
     }
 
     async function loadDataset(datasetName) {
+      if (!datasetName) return; currentDatasetName = datasetName;
       try {
         const res = await fetch(`viewer_data/${datasetName}/viewer_data.json`);
-        const payload = await res.json();
-        renderSummary(payload);
-        renderMIPs(datasetName, 0);
-      } catch (e) {
-        console.error(`Failed to load viewer data for ${datasetName}`, e);
-      }
+        currentPayload = await res.json();
+        renderSummaryCards(currentPayload);
+        let maxT = 0;
+        const allNodes = [...(currentPayload.gt_nodes_tp || []), ...(currentPayload.gt_nodes_fn || []), ...(currentPayload.pred_nodes_fp || [])];
+        allNodes.forEach(n => { if (n[5] > maxT) maxT = n[5]; }); maxFrames = maxT;
+        document.getElementById('frame-slider').max = maxT; document.getElementById('frame-input').max = maxT; currentFrame = 0;
+        if (currentPayload.gt_nodes_tp && currentPayload.gt_nodes_tp.length > 0) {
+          const n = currentPayload.gt_nodes_tp[0]; selectedNode = { z: n[0], y: n[1], x: n[2], gt_id: n[3], pred_id: n[4], t: n[5], parent_id: n[6], status: 'TP' };
+        } else if (currentPayload.gt_nodes_fn && currentPayload.gt_nodes_fn.length > 0) {
+          const n = currentPayload.gt_nodes_fn[0]; selectedNode = { z: n[0], y: n[1], x: n[2], gt_id: n[3], pred_id: n[4], t: n[5], parent_id: n[6], status: 'FN' };
+        } else selectedNode = null;
+        updateInspector(selectedNode); updateFrameView();
+      } catch (e) { console.error(`Failed to load payload for ${datasetName}`, e); }
     }
 
-    function renderSummary(payload) {
-      const summary = payload.global_summary || {};
-      const tooltips = payload.metadata?.tooltips || {};
-      const grid = document.getElementById('metrics-grid');
-      const legend = document.getElementById('legend-panel');
-
-      grid.innerHTML = `
-        <div class="metric-box">
-          <div class="metric-label">Node Precision</div>
-          <div class="metric-value">${(summary.node_precision || 0).toFixed(4)}</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">Node Recall</div>
-          <div class="metric-value">${(summary.node_recall || 0).toFixed(4)}</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">Node F1</div>
-          <div class="metric-value">${(summary.node_f1 || 0).toFixed(4)}</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">Edge F1</div>
-          <div class="metric-value">${(summary.edge_f1 || 0).toFixed(4)}</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">
-            Isolated GT Nodes
-            <span class="tooltip-container">
-              <span class="tooltip-icon">i</span>
-              <span class="tooltip-text">どのエッジとも接続していない孤立GT細胞ノード数 (100%抽出対象)</span>
-            </span>
-          </div>
-          <div class="metric-value">${summary.isolated_gt_nodes_count || 0}</div>
-        </div>
-      `;
-
-      legend.innerHTML = `
-        <div class="legend-item">
-          <span class="color-badge tp-color"></span>
-          <span>GT Node TP</span>
-          <span class="tooltip-container">
-            <span class="tooltip-icon">i</span>
-            <span class="tooltip-text">${tooltips.gt_node_tp || 'GT細胞と予測細胞が一致'}</span>
-          </span>
-        </div>
-        <div class="legend-item">
-          <span class="color-badge fn-color"></span>
-          <span>GT Node FN</span>
-          <span class="tooltip-container">
-            <span class="tooltip-icon">i</span>
-            <span class="tooltip-text">${tooltips.gt_node_fn || 'GT細胞が存在するが検出漏れ'}</span>
-          </span>
-        </div>
-        <div class="legend-item">
-          <span class="color-badge fp-color"></span>
-          <span>Pred Node FP</span>
-          <span class="tooltip-container">
-            <span class="tooltip-icon">i</span>
-            <span class="tooltip-text">${tooltips.pred_node_fp || '予測細胞が存在するがGTが存在しない'}</span>
-          </span>
-        </div>
-        <div class="legend-item">
-          <span style="color:#4caf50">━━</span>
-          <span>Edge TP</span>
-          <span class="tooltip-container">
-            <span class="tooltip-icon">i</span>
-            <span class="tooltip-text">${tooltips.gt_edge_tp || 'トラッキング成功エッジ'}</span>
-          </span>
-        </div>
-        <div class="legend-item">
-          <span style="color:#f44336">━━</span>
-          <span>Edge FN</span>
-          <span class="tooltip-container">
-            <span class="tooltip-icon">i</span>
-            <span class="tooltip-text">${tooltips.gt_edge_fn || '追跡途切れリンク'}</span>
-          </span>
-        </div>
+    function renderSummaryCards(payload) {
+      const summary = payload.global_summary || {}; const tooltips = payload.metadata?.tooltips || {};
+      const bar = document.getElementById('summary-bar');
+      bar.innerHTML = `
+        <div class="card"><div class="card-title">Node Precision <span class="tooltip-icon" data-tooltip="検出ノードの正解率 (TP / (TP + FP))">i</span></div><div class="card-val">${(summary.node_precision || 0).toFixed(4)}</div></div>
+        <div class="card"><div class="card-title">Node Recall <span class="tooltip-icon" data-tooltip="GT細胞の検出網羅率 (TP / (TP + FN))">i</span></div><div class="card-val">${(summary.node_recall || 0).toFixed(4)}</div></div>
+        <div class="card"><div class="card-title">Node F1 Score <span class="tooltip-icon" data-tooltip="ノード検出調和平均 F1 スコア">i</span></div><div class="card-val">${(summary.node_f1 || 0).toFixed(4)}</div></div>
+        <div class="card"><div class="card-title">Edge F1 Score <span class="tooltip-icon" data-tooltip="トラッキングリンク追跡一致率 F1 スコア">i</span></div><div class="card-val">${(summary.edge_f1 || 0).toFixed(4)}</div></div>
+        <div class="card" style="border-left-color: #ab47bc;"><div class="card-title">Isolated GT Nodes <span class="tooltip-icon" data-tooltip="${tooltips.isolated_gt_nodes || '孤立GTノード'}">i</span></div><div class="card-val">${summary.isolated_gt_nodes_count || 0} / ${summary.gt_nodes_total || 0}</div></div>
+        <div class="card" style="border-left-color: #2e7d32;"><div class="card-title">Node TP <span class="tooltip-icon" data-tooltip="${tooltips.gt_node_tp || 'TP'}">i</span></div><div class="card-val">${summary.node_tp_count || 0}</div></div>
+        <div class="card" style="border-left-color: #c62828;"><div class="card-title">Node FN <span class="tooltip-icon" data-tooltip="${tooltips.gt_node_fn || 'FN'}">i</span></div><div class="card-val">${summary.node_fn_count || 0}</div></div>
+        <div class="card" style="border-left-color: #ef6c00;"><div class="card-title">Node FP <span class="tooltip-icon" data-tooltip="${tooltips.pred_node_fp || 'FP'}">i</span></div><div class="card-val">${summary.node_fp_count || 0}</div></div>
+        <div class="card" style="border-left-color: #ffb74d;"><div class="card-title">Pred Edge FP <span class="tooltip-icon" data-tooltip="${tooltips.pred_edges_fp || '誤予測エッジ'}">i</span></div><div class="card-val">${summary.pred_edges_fp_count || 0}</div></div>
       `;
     }
 
-    function renderMIPs(datasetName, frameIdx) {
-      const container = document.getElementById('mips-container');
-      const frameStr = String(frameIdx).padStart(3, '0');
-      container.innerHTML = `
-        <div class="image-box">
-          <div>XY Projection (Z-MIP)</div>
-          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xy.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><rect width=\'200\' height=\'200\' fill=\'%23333\'/><text x=\'50%\' y=\'50%\' fill=\'%23888\' text-anchor=\'middle\'>No MIP Image</text></svg>'">
-        </div>
-        <div class="image-box">
-          <div>XZ Projection (Y-MIP)</div>
-          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_xz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><rect width=\'200\' height=\'200\' fill=\'%23333\'/><text x=\'50%\' y=\'50%\' fill=\'%23888\' text-anchor=\'middle\'>No MIP Image</text></svg>'">
-        </div>
-        <div class="image-box">
-          <div>YZ Projection (X-MIP)</div>
-          <img src="viewer_data/${datasetName}/mips/frame_${frameStr}_yz.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'/><text x=\'50%\' y=\'50%\' fill=\'%23888\' text-anchor=\'middle\'>No MIP Image</text></svg>'">
-        </div>
-      `;
+    function setupPlayerControls() {
+      const btnPlay = document.getElementById('btn-play');
+      btnPlay.addEventListener('click', () => {
+        isPlaying = !isPlaying; btnPlay.textContent = isPlaying ? '❚❚ Pause' : '▶ Play';
+        if (isPlaying) { playTimer = setInterval(() => { currentFrame = (currentFrame + 1) % (maxFrames + 1); updateFrameView(); }, 300); }
+        else clearInterval(playTimer);
+      });
+      document.getElementById('btn-prev').addEventListener('click', () => setFrame(currentFrame - 1));
+      document.getElementById('btn-next').addEventListener('click', () => setFrame(currentFrame + 1));
+      document.getElementById('frame-slider').addEventListener('input', (e) => setFrame(parseInt(e.target.value)));
+      document.getElementById('frame-input').addEventListener('change', (e) => setFrame(parseInt(e.target.value)));
+    }
+
+    function setFrame(f) { if (f < 0) f = 0; if (f > maxFrames) f = maxFrames; currentFrame = f; updateFrameView(); }
+    function updateFrameView() {
+      document.getElementById('frame-slider').value = currentFrame; document.getElementById('frame-input').value = currentFrame;
+      document.getElementById('frame-badge').textContent = `Frame ${currentFrame} / ${maxFrames}`;
+      render3DWindowPlot(); render3DLineagePlot(); render2DMIPCanvas(); drawGizmos();
+    }
+
+    function updateInspector(node) {
+      if (!node) return;
+      document.getElementById('insp-id').textContent = node.gt_id !== null ? node.gt_id : `Pred_${node.pred_id}`;
+      document.getElementById('insp-status').innerHTML = `<span class="badge bg-${node.status.toLowerCase()}">${node.status}</span>`;
+      document.getElementById('insp-frame').textContent = node.t;
+      document.getElementById('insp-pos').textContent = `(${node.z.toFixed(2)}, ${node.y.toFixed(2)}, ${node.x.toFixed(2)})`;
+      document.getElementById('insp-parent').textContent = node.parent_id !== null ? node.parent_id : '-';
+      document.getElementById('insp-pred').textContent = node.pred_id !== null ? node.pred_id : '-';
+    }
+
+    function render3DWindowPlot() {
+      if (!currentPayload) return;
+      const targetFrames = [currentFrame - 1, currentFrame, currentFrame + 1];
+      const filterNodes = (arr, status) => (arr || []).filter(n => targetFrames.includes(n[5])).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], pred_id: n[4], t: n[5], parent_id: n[6], status }));
+      const tpNodes = filterNodes(currentPayload.gt_nodes_tp, 'TP'); const fnNodes = filterNodes(currentPayload.gt_nodes_fn, 'FN'); const fpNodes = filterNodes(currentPayload.pred_nodes_fp, 'FP');
+      const createTrace = (nodes, color, name) => ({
+        x: nodes.map(n => n.x), y: nodes.map(n => n.y), z: nodes.map(n => n.z), mode: 'markers', type: 'scatter3d', name, marker: { size: 5, color },
+        text: nodes.map(n => `ID: ${n.id}<br>t: ${n.t}<br>Pos: (${n.z.toFixed(1)}, ${n.y.toFixed(1)}, ${n.x.toFixed(1)})`), hoverinfo: 'text'
+      });
+      const data = [createTrace(tpNodes, '#2e7d32', 'GT TP'), createTrace(fnNodes, '#c62828', 'GT FN'), createTrace(fpNodes, '#ef6c00', 'Pred FP')];
+      const layout = { margin: { l: 0, r: 0, b: 0, t: 0 }, paper_bgcolor: '#141414', plot_bgcolor: '#141414', scene: { xaxis: { title: 'X (μm)', color: '#888' }, yaxis: { title: 'Y (μm)', color: '#888' }, zaxis: { title: 'Z (μm)', color: '#888' }, bgcolor: '#141414' }, showlegend: true, legend: { x: 0, y: 1, font: { color: '#eee', size: 10 } } };
+      Plotly.react('plot-3d-window', data, layout, { responsive: true });
+    }
+
+    function render3DLineagePlot() {
+      if (!currentPayload || !selectedNode) return;
+      const targetId = selectedNode.gt_id;
+      const allNodes = [...(currentPayload.gt_nodes_tp || []), ...(currentPayload.gt_nodes_fn || [])];
+      const lineageNodes = allNodes.filter(n => n[3] === targetId || n[6] === targetId).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], t: n[5] }));
+      lineageNodes.sort((a, b) => a.t - b.t);
+      const trace = {
+        x: lineageNodes.map(n => n.x), y: lineageNodes.map(n => n.y), z: lineageNodes.map(n => n.z), mode: 'lines+markers', type: 'scatter3d', name: `Track ${targetId}`,
+        line: { color: '#4fc3f7', width: 4 }, marker: { size: 6, color: '#ab47bc' }, text: lineageNodes.map(n => `ID: ${n.id}<br>t: ${n.t}`), hoverinfo: 'text'
+      };
+      const layout = { margin: { l: 0, r: 0, b: 0, t: 0 }, paper_bgcolor: '#141414', plot_bgcolor: '#141414', scene: { xaxis: { title: 'X (μm)', color: '#888' }, yaxis: { title: 'Y (μm)', color: '#888' }, zaxis: { title: 'Z (μm)', color: '#888' }, bgcolor: '#141414' }, showlegend: false };
+      Plotly.react('plot-3d-lineage', [trace], layout, { responsive: true });
+    }
+
+    function setup2DCanvasEvents() {
+      ['xy', 'xz', 'yz'].forEach(type => {
+        const canvas = document.getElementById(`canvas-${type}`);
+        canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomScale *= (e.deltaY < 0 ? 1.1 : 0.9); render2DMIPCanvas(); });
+        canvas.addEventListener('mousedown', (e) => { isDragging = true; dragStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y }; });
+        window.addEventListener('mousemove', (e) => { if (!isDragging) return; panOffset.x = e.clientX - dragStart.x; panOffset.y = e.clientY - dragStart.y; render2DMIPCanvas(); });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+      });
+      document.getElementById('btn-reset-2d').addEventListener('click', () => { zoomScale = 1.0; panOffset = { x: 0, y: 0 }; render2DMIPCanvas(); });
+    }
+
+    function render2DMIPCanvas() {
+      if (!currentDatasetName) return; const frameStr = String(currentFrame).padStart(3, '0');
+      ['xy', 'xz', 'yz'].forEach(type => {
+        const canvas = document.getElementById(`canvas-${type}`); const ctx = canvas.getContext('2d'); const img = new Image();
+        img.src = `viewer_data/${currentDatasetName}/mips/frame_${frameStr}_${type}.png`;
+        img.onload = () => {
+          canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
+          ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(panOffset.x, panOffset.y); ctx.scale(zoomScale, zoomScale);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          if (currentPayload) {
+            const frameNodes = [
+              ...(currentPayload.gt_nodes_tp || []).filter(n => n[5] === currentFrame).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], st: 'TP' })),
+              ...(currentPayload.gt_nodes_fn || []).filter(n => n[5] === currentFrame).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], st: 'FN' })),
+              ...(currentPayload.pred_nodes_fp || []).filter(n => n[5] === currentFrame).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], st: 'FP' }))
+            ];
+            frameNodes.forEach(n => {
+              let px = 0, py = 0;
+              if (type === 'xy') { px = (n.x / 100) * canvas.width; py = (n.y / 100) * canvas.height; }
+              else if (type === 'xz') { px = (n.x / 100) * canvas.width; py = (n.z / 100) * canvas.height; }
+              else if (type === 'yz') { px = (n.y / 100) * canvas.width; py = (n.z / 100) * canvas.height; }
+              ctx.beginPath(); ctx.arc(px, py, 4, 0, 2 * Math.PI); ctx.fillStyle = n.st === 'TP' ? '#2e7d32' : n.st === 'FN' ? '#c62828' : '#ef6c00'; ctx.fill();
+              if (selectedNode && selectedNode.gt_id === n.id) {
+                ctx.beginPath(); ctx.arc(px, py, 14, 0, 2 * Math.PI); ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 2; ctx.stroke();
+              }
+            });
+          }
+          ctx.restore();
+        };
+      });
+    }
+
+    function drawGizmos() {
+      const gizmoConfigs = { 'xy': { labelX: 'X (R)', colorX: '#f44336', labelY: 'Y (D)', colorY: '#4caf50' }, 'xz': { labelX: 'X (R)', colorX: '#f44336', labelY: 'Z (D)', colorY: '#2196f3' }, 'yz': { labelX: 'Y (R)', colorX: '#4caf50', labelY: 'Z (D)', colorY: '#2196f3' } };
+      ['xy', 'xz', 'yz'].forEach(type => {
+        const c = document.getElementById(`gizmo-${type}`); const ctx = c.getContext('2d'); c.width = 45; c.height = 45; const cfg = gizmoConfigs[type];
+        ctx.clearRect(0, 0, 45, 45); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(8, 37); ctx.lineTo(35, 37); ctx.strokeStyle = cfg.colorX; ctx.stroke(); ctx.fillStyle = cfg.colorX; ctx.font = '9px sans-serif'; ctx.fillText(cfg.labelX, 22, 33);
+        ctx.beginPath(); ctx.moveTo(8, 37); ctx.lineTo(8, 10); ctx.strokeStyle = cfg.colorY; ctx.stroke(); ctx.fillStyle = cfg.colorY; ctx.fillText(cfg.labelY, 12, 18);
+      });
     }
 
     init();
-      </script>
-    </body>
-    </html>
-    
+  </script>
+</body>
+</html>
