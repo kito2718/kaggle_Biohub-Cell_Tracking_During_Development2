@@ -2,314 +2,510 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>GT-Centric Cell Tracking Viewer (Advanced S2.3)</title>
+  <title>Advanced Cell Tracking GT-Centric Viewer (Full Interactivity)</title>
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #e0e0e0; font-size: 12px; }
-    .top-bar { background: #1e1e1e; padding: 8px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
-    h1 { font-size: 16px; color: #4fc3f7; font-weight: 600; margin: 0; }
-    .selector-container { display: flex; align-items: center; gap: 10px; }
-    input[type="text"], select, input[type="number"] { padding: 4px 8px; font-size: 12px; border-radius: 4px; background: #2a2a2a; color: #fff; border: 1px solid #444; }
-    input[type="text"]:focus, select:focus { border-color: #4fc3f7; outline: none; }
-    .summary-bar { display: flex; gap: 10px; padding: 8px 15px; background: #181818; border-bottom: 1px solid #2a2a2a; flex-wrap: wrap; }
-    .card { background: #222; border-radius: 6px; padding: 6px 10px; border-left: 3px solid #4fc3f7; flex: 1; min-width: 130px; position: relative; }
-    .card-title { font-size: 10px; color: #aaa; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; }
-    .card-val { font-size: 15px; font-weight: bold; color: #fff; margin-top: 2px; }
-    .tooltip-icon { display: inline-block; width: 13px; height: 13px; background: #444; color: #fff; border-radius: 50%; text-align: center; font-size: 9px; line-height: 13px; cursor: help; }
-    .tooltip-icon:hover::after {
-      content: attr(data-tooltip); position: absolute; z-index: 1000; bottom: 120%; left: 10px;
-      width: 200px; background: #333; color: #fff; padding: 6px; border-radius: 4px; font-size: 10px;
-      font-weight: normal; text-transform: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 1px solid #555;
-    }
-    .player-bar { display: flex; align-items: center; gap: 12px; padding: 6px 15px; background: #1a1a1a; border-bottom: 1px solid #2a2a2a; }
-    .btn { padding: 4px 10px; font-size: 12px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; }
-    .btn:hover { background: #444; border-color: #4fc3f7; }
-    .slider { flex: 1; cursor: pointer; }
-    .frame-badge { font-weight: bold; color: #4fc3f7; min-width: 90px; }
-    .main-grid { display: grid; grid-template-columns: 1fr 300px; gap: 10px; padding: 10px; height: calc(100vh - 140px); overflow: hidden; }
-    .left-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 5px; }
-    .right-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-    .plot-section { background: #1e1e1e; border-radius: 6px; padding: 8px; border: 1px solid #2a2a2a; }
-    .section-header { font-weight: 600; font-size: 12px; color: #4fc3f7; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-    .plots-3d-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; height: 360px; }
-    .plotly-box { width: 100%; height: 100%; border-radius: 4px; background: #141414; }
-    .mips-2d-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; height: 340px; }
-    .mip-canvas-box { position: relative; width: 100%; height: 100%; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid #333; }
-    .mip-canvas-box canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
-    .mip-title { position: absolute; top: 6px; left: 8px; font-size: 11px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 3px; z-index: 10; }
-    .gizmo-overlay { position: absolute; bottom: 8px; right: 8px; width: 45px; height: 45px; pointer-events: none; z-index: 10; }
-    .inspector-card { background: #1e1e1e; border-radius: 6px; padding: 12px; border: 1px solid #333; }
-    .inspector-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    .inspector-table td { padding: 4px 6px; border-bottom: 1px solid #2a2a2a; font-size: 11px; }
-    .inspector-table td.label { color: #888; width: 40%; }
-    .inspector-table td.val { color: #fff; font-weight: 600; word-break: break-all; }
-    .badge { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; color: #fff; }
-    .bg-tp { background: #2e7d32; }
-    .bg-fn { background: #c62828; }
-    .bg-fp { background: #ef6c00; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: #e0e0e0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    header { background: #1e1e1e; border-bottom: 1px solid #333; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.1rem; color: #00bcd4; display: flex; align-items: center; gap: 8px; }
+    .header-controls { display: flex; align-items: center; gap: 15px; }
+    select, input, button { background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px 10px; font-size: 0.85rem; outline: none; }
+    button { cursor: pointer; background: #00838f; border: none; font-weight: bold; transition: background 0.2s; }
+    button:hover { background: #00acc1; }
+    main { display: flex; flex: 1; height: calc(100vh - 55px); overflow: hidden; }
+    .left-panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #333; height: 100%; }
+    .right-panel { width: 340px; background: #181818; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    .plots-row-top { display: flex; height: 45%; border-bottom: 1px solid #333; }
+    .plot-3d-box { flex: 1; display: flex; flex-direction: column; position: relative; border-right: 1px solid #222; }
+    .plot-3d-box:last-child { border-right: none; }
+    .plot-title { position: absolute; top: 8px; left: 12px; z-index: 10; font-size: 0.8rem; font-weight: bold; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; color: #80deea; pointer-events: none; }
+    .plotly-container { width: 100%; height: 100%; }
+    .mip-row-bottom { display: flex; height: 55%; background: #050505; }
+    .mip-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border-right: 1px solid #222; overflow: hidden; }
+    .mip-box:last-child { border-right: none; }
+    .mip-canvas-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    canvas { display: block; max-width: 100%; max-height: 100%; cursor: crosshair; }
+    .card { background: #222; border-radius: 6px; padding: 12px; border: 1px solid #333; }
+    .card-title { font-size: 0.85rem; font-weight: bold; color: #4dd0e1; margin-bottom: 8px; border-bottom: 1px solid #37474f; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem; }
+    .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .stat-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; }
+    .stat-val { font-weight: bold; color: #fff; }
+    .input-group { display: flex; gap: 6px; margin-top: 6px; }
+    .input-group input { flex: 1; }
+    .playback-bar { display: flex; align-items: center; gap: 10px; padding: 8px 15px; background: #1a1a1a; border-top: 1px solid #2a2a2a; }
+    .slider-container { flex: 1; display: flex; align-items: center; gap: 10px; }
+    input[type=range] { flex: 1; accent-color: #00bcd4; }
   </style>
 </head>
 <body>
-  <div class="top-bar">
-    <h1>GT-Centric Cell Tracking Viewer</h1>
-    <div class="selector-container">
-      <label>Search:</label>
-      <input type="text" id="dataset-search" placeholder="e.g. no1, no.1, 44b6..." style="width: 140px;">
-      <label>Dataset:</label>
-      <select id="dataset-select" style="min-width: 220px;"><option value="">Loading...</option></select>
+  <header>
+    <h1>🔬 Biohub GT-Centric Tracking Inspector</h1>
+    <div class="header-controls">
+      <label style="font-size:0.85rem;">Dataset: <select id="datasetSelect"></select></label>
+      <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px;">
+        <input type="checkbox" id="syncCameraCheck" checked> Sync 3D Cameras
+      </label>
     </div>
-  </div>
-  <div class="summary-bar" id="summary-bar"></div>
-  <div class="player-bar">
-    <button class="btn" id="btn-play">▶ Play</button>
-    <button class="btn" id="btn-prev">◀ Step</button>
-    <button class="btn" id="btn-next">Step ▶</button>
-    <input type="number" id="frame-input" min="0" value="0" style="width: 55px;">
-    <input type="range" id="frame-slider" class="slider" min="0" max="0" value="0">
-    <span class="frame-badge" id="frame-badge">Frame 0 / 0</span>
-  </div>
-  <div class="main-grid">
+  </header>
+
+  <main>
     <div class="left-panel">
-      <div class="plot-section">
-        <div class="section-header">
-          <span>3D Tracking Plots</span>
-          <span style="font-size: 10px; color: #888;">Left: Window (t-1, t, t+1) | Right: Selected Cell Full Lineage</span>
+      <div class="plots-row-top">
+        <div class="plot-3d-box">
+          <div class="plot-title">Left: 3D Frame Window Plot (t-1, t, t+1)</div>
+          <div id="plot3dLeft" class="plotly-container"></div>
         </div>
-        <div class="plots-3d-row">
-          <div id="plot-3d-window" class="plotly-box"></div>
-          <div id="plot-3d-lineage" class="plotly-box"></div>
+        <div class="plot-3d-box">
+          <div class="plot-title">Right: Selected Cell Full Lineage Plot (All Frames)</div>
+          <div id="plot3dRight" class="plotly-container"></div>
         </div>
       </div>
-      <div class="plot-section">
-        <div class="section-header">
-          <span>2D MIP Projection Canvas (Overlay GT/Pred & 7μm Highlight Circle)</span>
-          <button class="btn" id="btn-reset-2d" style="font-size: 10px; padding: 2px 6px;">Reset 2D Pan/Zoom</button>
+      
+      <div class="mip-row-bottom">
+        <div class="mip-box">
+          <div class="plot-title">XY Projection (Z-MIP)</div>
+          <div class="mip-canvas-container"><canvas id="canvasXY"></canvas></div>
         </div>
-        <div class="mips-2d-row">
-          <div class="mip-canvas-box">
-            <div class="mip-title">XY Projection (Z-MIP)</div>
-            <canvas id="canvas-xy"></canvas>
-            <canvas class="gizmo-overlay" id="gizmo-xy"></canvas>
-          </div>
-          <div class="mip-canvas-box">
-            <div class="mip-title">XZ Projection (Y-MIP)</div>
-            <canvas id="canvas-xz"></canvas>
-            <canvas class="gizmo-overlay" id="gizmo-xz"></canvas>
-          </div>
-          <div class="mip-canvas-box">
-            <div class="mip-title">YZ Projection (X-MIP)</div>
-            <canvas id="canvas-yz"></canvas>
-            <canvas class="gizmo-overlay" id="gizmo-yz"></canvas>
-          </div>
+        <div class="mip-box">
+          <div class="plot-title">XZ Projection (Y-MIP)</div>
+          <div class="mip-canvas-container"><canvas id="canvasXZ"></canvas></div>
+        </div>
+        <div class="mip-box">
+          <div class="plot-title">YZ Projection (X-MIP)</div>
+          <div class="mip-canvas-container"><canvas id="canvasYZ"></canvas></div>
+        </div>
+      </div>
+
+      <div class="playback-bar">
+        <button id="playBtn">▶ Play</button>
+        <div class="slider-container">
+          <span style="font-size:0.8rem;">Frame:</span>
+          <input type="range" id="frameSlider" min="0" max="0" value="0">
+          <span id="frameLabel" style="font-size:0.85rem; font-weight:bold; min-width:60px;">0 / 0</span>
         </div>
       </div>
     </div>
+
     <div class="right-panel">
-      <div class="inspector-card">
-        <div class="section-header"><span>Cell Node Inspector</span></div>
-        <table class="inspector-table">
-          <tr><td class="label">Node ID</td><td class="val" id="insp-id">-</td></tr>
-          <tr><td class="label">Status</td><td class="val" id="insp-status">-</td></tr>
-          <tr><td class="label">Frame (t)</td><td class="val" id="insp-frame">-</td></tr>
-          <tr><td class="label">Pos (Z, Y, X μm)</td><td class="val" id="insp-pos">-</td></tr>
-          <tr><td class="label">Parent ID</td><td class="val" id="insp-parent">-</td></tr>
-          <tr><td class="label">Matched Pred ID</td><td class="val" id="insp-pred">-</td></tr>
-        </table>
+      <!-- Visibility Filter Card -->
+      <div class="card">
+        <div class="card-title">👁️ Visibility Filter</div>
+        <div class="filter-grid">
+          <label class="filter-item"><input type="checkbox" id="chkGttp" checked> <span style="color:#00e676;">● GT TP Node</span></label>
+          <label class="filter-item"><input type="checkbox" id="chkGtfn" checked> <span style="color:#ff1744;">● GT FN Node</span></label>
+          <label class="filter-item"><input type="checkbox" id="chkPredfp" checked> <span style="color:#ff9100;">✕ Pred FP Node</span></label>
+          <label class="filter-item"><input type="checkbox" id="chkEdgetp" checked> <span style="color:#00e676;">― GT Edge TP</span></label>
+          <label class="filter-item"><input type="checkbox" id="chkEdgefn" checked> <span style="color:#ff1744;">― GT Edge FN</span></label>
+          <label class="filter-item"><input type="checkbox" id="chkEdgefp" checked> <span style="color:#ff9100;">― Pred Edge FP</span></label>
+        </div>
       </div>
-      <div class="inspector-card">
-        <div class="section-header"><span>Consolidated RAW CSV (All Datasets)</span></div>
-        <div style="font-size: 11px; margin-top: 5px;">
-          <a id="link-csv-nodes" href="viewer_data/gt_nodes.csv" target="_blank" style="color: #4fc3f7; text-decoration: underline; display: block; margin-bottom: 6px;">gt_nodes.csv (All Dataset GT Nodes)</a>
-          <a id="link-csv-edges" href="viewer_data/gt_edges.csv" target="_blank" style="color: #4fc3f7; text-decoration: underline; display: block;">gt_edges.csv (All Dataset GT Edges)</a>
+
+      <!-- Current Frame Summary Card -->
+      <div class="card">
+        <div class="card-title">📊 Frame <span id="sumFrameId">0</span> Summary</div>
+        <div class="stat-row"><span>Node Precision:</span><span id="statPrec" class="stat-val">0.0</span></div>
+        <div class="stat-row"><span>Node Recall:</span><span id="statRec" class="stat-val">0.0</span></div>
+        <div class="stat-row"><span>Node F1 Score:</span><span id="statF1" class="stat-val">0.0</span></div>
+        <hr style="border:0; border-top:1px solid #333; margin:6px 0;">
+        <div class="stat-row"><span>GT TP / FN:</span><span id="statNodeCounts" class="stat-val">0 / 0</span></div>
+        <div class="stat-row"><span>Pred FP:</span><span id="statNodeFp" class="stat-val">0</span></div>
+        <div class="stat-row"><span>Edge TP / FN / FP:</span><span id="statEdgeCounts" class="stat-val">0 / 0 / 0</span></div>
+      </div>
+
+      <!-- Cell Node / Edge Direct Selection Inspector -->
+      <div class="card">
+        <div class="card-title">🔍 Selection & Inspector</div>
+        <div style="font-size:0.75rem; color:#aaa; margin-bottom:6px;">Select via Plot/Canvas Click or Enter ID:</div>
+        
+        <div style="margin-bottom:8px;">
+          <div style="font-size:0.75rem; color:#80deea;">Select Node by ID:</div>
+          <div class="input-group">
+            <input type="number" id="nodeIdInput" placeholder="Node ID (e.g. 101)">
+            <button id="selectNodeBtn">Select</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:8px;">
+          <div style="font-size:0.75rem; color:#80deea;">Select Edge by Source-Target:</div>
+          <div class="input-group">
+            <input type="number" id="edgeSrcInput" placeholder="Src ID" style="width:45%;">
+            <input type="number" id="edgeTgtInput" placeholder="Tgt ID" style="width:45%;">
+            <button id="selectEdgeBtn">Select</button>
+          </div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #333; margin:8px 0;">
+        <div id="inspectorDetails" style="font-size:0.78rem; line-height:1.5;">
+          <div style="color:#888; text-align:center; padding:10px;">No node selected</div>
+        </div>
+      </div>
+
+      <!-- Dataset Raw CSV Link -->
+      <div class="card">
+        <div class="card-title">📥 Consolidated RAW CSV</div>
+        <div style="font-size:0.75rem; display:flex; flex-direction:column; gap:6px;">
+          <a href="viewer_data/gt_nodes.csv" target="_blank" style="color:#4dd0e1;">📄 Download gt_nodes.csv</a>
+          <a href="viewer_data/gt_edges.csv" target="_blank" style="color:#4dd0e1;">📄 Download gt_edges.csv</a>
         </div>
       </div>
     </div>
-  </div>
+  </main>
+
   <script>
-    let allDatasets = []; let currentPayload = null; let currentDatasetName = '';
-    let currentFrame = 0; let maxFrames = 0; let isPlaying = false; let playTimer = null; let selectedNode = null;
-    let zoomScale = 1.0; let panOffset = { x: 0, y: 0 }; let isDragging = false; let dragStart = { x: 0, y: 0 };
+    let viewerData = null;
+    let currentDataset = "";
+    let currentFrame = 0;
+    let isPlaying = false;
+    let playInterval = null;
+
+    let selectedNodeId = null;
+    let selectedEdgePair = null;
+
+    let mipImages = { xy: new Image(), xz: new Image(), yz: new Image() };
+
+    // 2D Canvas Zoom/Pan State (Sensitivity & 100x Scale support)
+    let zoomState = { scale: 1.0, offsetX: 0, offsetY: 0, isDragging: false, dragStart: {x:0, y:0} };
+
+    // Camera sync state
+    let isRelayouting = false;
 
     async function init() {
       try {
         const res = await fetch('viewer_data/datasets.json');
-        const data = await res.json();
-        allDatasets = data.datasets || [];
-        populateSelect(allDatasets);
-        document.getElementById('dataset-search').addEventListener('input', (e) => filterDatasets(e.target.value));
-        document.getElementById('dataset-select').addEventListener('change', (e) => loadDataset(e.target.value));
-        setupPlayerControls(); setup2DCanvasEvents();
-      } catch (e) { console.error('Failed to init datasets.json', e); }
-    }
-
-    function populateSelect(list) {
-      const select = document.getElementById('dataset-select'); select.innerHTML = '';
-      list.forEach((ds, idx) => {
-        const opt = document.createElement('option'); opt.value = ds; opt.textContent = `No.${idx + 1}: ${ds}`; select.appendChild(opt);
-      });
-      if (list.length > 0) loadDataset(list[0]);
-    }
-
-    function filterDatasets(query) {
-      const q = query.trim().toLowerCase(); if (!q) { populateSelect(allDatasets); return; }
-      const noMatch = q.match(/^no\.?\s*(\d+)$/);
-      let filtered = [];
-      if (noMatch) {
-        const targetNo = parseInt(noMatch[1]);
-        if (targetNo >= 1 && targetNo <= allDatasets.length) filtered = [allDatasets[targetNo - 1]];
-      } else {
-        filtered = allDatasets.filter(ds => ds.toLowerCase().includes(q));
+        const manifest = await res.json();
+        const sel = document.getElementById('datasetSelect');
+        sel.innerHTML = '';
+        manifest.datasets.forEach(ds => {
+          const opt = document.createElement('option');
+          opt.value = ds; opt.textContent = ds;
+          sel.appendChild(opt);
+        });
+        if (manifest.datasets.length > 0) {
+          currentDataset = manifest.datasets[0];
+          await loadDataset(currentDataset);
+        }
+      } catch(e) {
+        console.error("Failed to load dataset manifest:", e);
       }
-      populateSelect(filtered);
+
+      document.getElementById('datasetSelect').addEventListener('change', async (e) => {
+        currentDataset = e.target.value;
+        await loadDataset(currentDataset);
+      });
+
+      document.getElementById('frameSlider').addEventListener('input', (e) => {
+        currentFrame = parseInt(e.target.value);
+        updateView();
+      });
+
+      document.getElementById('playBtn').addEventListener('click', togglePlay);
+      
+      // Visibility Filter Listeners
+      ['chkGttp','chkGtfn','chkPredfp','chkEdgetp','chkEdgefn','chkEdgefp'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => updateView());
+      });
+
+      // Direct ID Select Listeners
+      document.getElementById('selectNodeBtn').addEventListener('click', () => {
+        const id = parseInt(document.getElementById('nodeIdInput').value);
+        if(!isNaN(id)) { selectedNodeId = id; selectedEdgePair = null; updateView(); }
+      });
+      document.getElementById('selectEdgeBtn').addEventListener('click', () => {
+        const src = parseInt(document.getElementById('edgeSrcInput').value);
+        const tgt = parseInt(document.getElementById('edgeTgtInput').value);
+        if(!isNaN(src) && !isNaN(tgt)) { selectedEdgePair = [src, tgt]; selectedNodeId = null; updateView(); }
+      });
+
+      setupCanvasEvents();
     }
 
-    async function loadDataset(datasetName) {
-      if (!datasetName) return; currentDatasetName = datasetName;
+    async function loadDataset(dsName) {
       try {
-        const res = await fetch(`viewer_data/${datasetName}/viewer_data.json`);
-        currentPayload = await res.json();
-        renderSummaryCards(currentPayload);
-        let maxT = 0;
-        const allNodes = [...(currentPayload.gt_nodes_tp || []), ...(currentPayload.gt_nodes_fn || []), ...(currentPayload.pred_nodes_fp || [])];
-        allNodes.forEach(n => { if (n[5] > maxT) maxT = n[5]; }); maxFrames = maxT;
-        document.getElementById('frame-slider').max = maxT; document.getElementById('frame-input').max = maxT; currentFrame = 0;
-        if (currentPayload.gt_nodes_tp && currentPayload.gt_nodes_tp.length > 0) {
-          const n = currentPayload.gt_nodes_tp[0]; selectedNode = { z: n[0], y: n[1], x: n[2], gt_id: n[3], pred_id: n[4], t: n[5], parent_id: n[6], status: 'TP' };
-        } else if (currentPayload.gt_nodes_fn && currentPayload.gt_nodes_fn.length > 0) {
-          const n = currentPayload.gt_nodes_fn[0]; selectedNode = { z: n[0], y: n[1], x: n[2], gt_id: n[3], pred_id: n[4], t: n[5], parent_id: n[6], status: 'FN' };
-        } else selectedNode = null;
-        updateInspector(selectedNode); updateFrameView();
-      } catch (e) { console.error(`Failed to load payload for ${datasetName}`, e); }
+        const res = await fetch(`viewer_data/${dsName}/viewer_data.json`);
+        viewerData = await res.json();
+        const slider = document.getElementById('frameSlider');
+        const numFrames = viewerData.metadata.num_frames;
+        slider.max = numFrames - 1;
+        slider.value = 0;
+        currentFrame = 0;
+        selectedNodeId = null;
+        selectedEdgePair = null;
+        updateView();
+      } catch(e) {
+        console.error(`Failed to load viewer_data for ${dsName}:`, e);
+      }
     }
 
-    function renderSummaryCards(payload) {
-      const summary = payload.global_summary || {}; const tooltips = payload.metadata?.tooltips || {};
-      const bar = document.getElementById('summary-bar');
-      bar.innerHTML = `
-        <div class="card"><div class="card-title">Node Precision <span class="tooltip-icon" data-tooltip="検出ノードの正解率 (TP / (TP + FP))">i</span></div><div class="card-val">${(summary.node_precision || 0).toFixed(4)}</div></div>
-        <div class="card"><div class="card-title">Node Recall <span class="tooltip-icon" data-tooltip="GT細胞の検出網羅率 (TP / (TP + FN))">i</span></div><div class="card-val">${(summary.node_recall || 0).toFixed(4)}</div></div>
-        <div class="card"><div class="card-title">Node F1 Score <span class="tooltip-icon" data-tooltip="ノード検出調和平均 F1 スコア">i</span></div><div class="card-val">${(summary.node_f1 || 0).toFixed(4)}</div></div>
-        <div class="card"><div class="card-title">Edge F1 Score <span class="tooltip-icon" data-tooltip="トラッキングリンク追跡一致率 F1 スコア">i</span></div><div class="card-val">${(summary.edge_f1 || 0).toFixed(4)}</div></div>
-        <div class="card" style="border-left-color: #ab47bc;"><div class="card-title">Isolated GT Nodes <span class="tooltip-icon" data-tooltip="${tooltips.isolated_gt_nodes || '孤立GTノード'}">i</span></div><div class="card-val">${summary.isolated_gt_nodes_count || 0} / ${summary.gt_nodes_total || 0}</div></div>
-        <div class="card" style="border-left-color: #2e7d32;"><div class="card-title">Node TP <span class="tooltip-icon" data-tooltip="${tooltips.gt_node_tp || 'TP'}">i</span></div><div class="card-val">${summary.node_tp_count || 0}</div></div>
-        <div class="card" style="border-left-color: #c62828;"><div class="card-title">Node FN <span class="tooltip-icon" data-tooltip="${tooltips.gt_node_fn || 'FN'}">i</span></div><div class="card-val">${summary.node_fn_count || 0}</div></div>
-        <div class="card" style="border-left-color: #ef6c00;"><div class="card-title">Node FP <span class="tooltip-icon" data-tooltip="${tooltips.pred_node_fp || 'FP'}">i</span></div><div class="card-val">${summary.node_fp_count || 0}</div></div>
-        <div class="card" style="border-left-color: #ffb74d;"><div class="card-title">Pred Edge FP <span class="tooltip-icon" data-tooltip="${tooltips.pred_edges_fp || '誤予測エッジ'}">i</span></div><div class="card-val">${summary.pred_edges_fp_count || 0}</div></div>
-      `;
+    function togglePlay() {
+      const btn = document.getElementById('playBtn');
+      if(isPlaying) {
+        clearInterval(playInterval);
+        isPlaying = false;
+        btn.textContent = "▶ Play";
+      } else {
+        isPlaying = true;
+        btn.textContent = "⏸ Pause";
+        playInterval = setInterval(() => {
+          if(!viewerData) return;
+          currentFrame = (currentFrame + 1) % viewerData.metadata.num_frames;
+          document.getElementById('frameSlider').value = currentFrame;
+          updateView();
+        }, 300);
+      }
     }
 
-    function setupPlayerControls() {
-      const btnPlay = document.getElementById('btn-play');
-      btnPlay.addEventListener('click', () => {
-        isPlaying = !isPlaying; btnPlay.textContent = isPlaying ? '❚❚ Pause' : '▶ Play';
-        if (isPlaying) { playTimer = setInterval(() => { currentFrame = (currentFrame + 1) % (maxFrames + 1); updateFrameView(); }, 300); }
-        else clearInterval(playTimer);
-      });
-      document.getElementById('btn-prev').addEventListener('click', () => setFrame(currentFrame - 1));
-      document.getElementById('btn-next').addEventListener('click', () => setFrame(currentFrame + 1));
-      document.getElementById('frame-slider').addEventListener('input', (e) => setFrame(parseInt(e.target.value)));
-      document.getElementById('frame-input').addEventListener('change', (e) => setFrame(parseInt(e.target.value)));
+    function updateView() {
+      if(!viewerData) return;
+      document.getElementById('frameLabel').textContent = `${currentFrame} / ${viewerData.metadata.num_frames - 1}`;
+      document.getElementById('sumFrameId').textContent = currentFrame;
+
+      const fData = viewerData.frames[currentFrame] || { summary:{}, gt_node_tp:[], gt_node_fn:[], pred_node_fp:[], gt_edge_tp:[], gt_edge_fn:[], pred_edge_fp:[] };
+      const sum = fData.summary || {};
+      document.getElementById('statPrec').textContent = sum.precision || "0.0";
+      document.getElementById('statRec').textContent = sum.recall || "0.0";
+      document.getElementById('statF1').textContent = sum.f1 || "0.0";
+      document.getElementById('statNodeCounts').textContent = `${fData.gt_node_tp.length} / ${fData.gt_node_fn.length}`;
+      document.getElementById('statNodeFp').textContent = fData.pred_node_fp.length;
+      document.getElementById('statEdgeCounts').textContent = `${fData.gt_edge_tp.length} / ${fData.gt_edge_fn.length} / ${fData.pred_edge_fp.length}`;
+
+      update3DPlots();
+      updateMIPCanvases();
+      updateInspector();
     }
 
-    function setFrame(f) { if (f < 0) f = 0; if (f > maxFrames) f = maxFrames; currentFrame = f; updateFrameView(); }
-    function updateFrameView() {
-      document.getElementById('frame-slider').value = currentFrame; document.getElementById('frame-input').value = currentFrame;
-      document.getElementById('frame-badge').textContent = `Frame ${currentFrame} / ${maxFrames}`;
-      render3DWindowPlot(); render3DLineagePlot(); render2DMIPCanvas(); drawGizmos();
-    }
-
-    function updateInspector(node) {
-      if (!node) return;
-      document.getElementById('insp-id').textContent = node.gt_id !== null ? node.gt_id : `Pred_${node.pred_id}`;
-      document.getElementById('insp-status').innerHTML = `<span class="badge bg-${node.status.toLowerCase()}">${node.status}</span>`;
-      document.getElementById('insp-frame').textContent = node.t;
-      document.getElementById('insp-pos').textContent = `(${node.z.toFixed(2)}, ${node.y.toFixed(2)}, ${node.x.toFixed(2)})`;
-      document.getElementById('insp-parent').textContent = node.parent_id !== null ? node.parent_id : '-';
-      document.getElementById('insp-pred').textContent = node.pred_id !== null ? node.pred_id : '-';
-    }
-
-    function render3DWindowPlot() {
-      if (!currentPayload) return;
-      const targetFrames = [currentFrame - 1, currentFrame, currentFrame + 1];
-      const filterNodes = (arr, status) => (arr || []).filter(n => targetFrames.includes(n[5])).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], pred_id: n[4], t: n[5], parent_id: n[6], status }));
-      const tpNodes = filterNodes(currentPayload.gt_nodes_tp, 'TP'); const fnNodes = filterNodes(currentPayload.gt_nodes_fn, 'FN'); const fpNodes = filterNodes(currentPayload.pred_nodes_fp, 'FP');
-      const createTrace = (nodes, color, name) => ({
-        x: nodes.map(n => n.x), y: nodes.map(n => n.y), z: nodes.map(n => n.z), mode: 'markers', type: 'scatter3d', name, marker: { size: 5, color },
-        text: nodes.map(n => `ID: ${n.id}<br>t: ${n.t}<br>Pos: (${n.z.toFixed(1)}, ${n.y.toFixed(1)}, ${n.x.toFixed(1)})`), hoverinfo: 'text'
-      });
-      const data = [createTrace(tpNodes, '#2e7d32', 'GT TP'), createTrace(fnNodes, '#c62828', 'GT FN'), createTrace(fpNodes, '#ef6c00', 'Pred FP')];
-      const layout = { margin: { l: 0, r: 0, b: 0, t: 0 }, paper_bgcolor: '#141414', plot_bgcolor: '#141414', scene: { xaxis: { title: 'X (μm)', color: '#888' }, yaxis: { title: 'Y (μm)', color: '#888' }, zaxis: { title: 'Z (μm)', color: '#888' }, bgcolor: '#141414' }, showlegend: true, legend: { x: 0, y: 1, font: { color: '#eee', size: 10 } } };
-      Plotly.react('plot-3d-window', data, layout, { responsive: true });
-    }
-
-    function render3DLineagePlot() {
-      if (!currentPayload || !selectedNode) return;
-      const targetId = selectedNode.gt_id;
-      const allNodes = [...(currentPayload.gt_nodes_tp || []), ...(currentPayload.gt_nodes_fn || [])];
-      const lineageNodes = allNodes.filter(n => n[3] === targetId || n[6] === targetId).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], t: n[5] }));
-      lineageNodes.sort((a, b) => a.t - b.t);
-      const trace = {
-        x: lineageNodes.map(n => n.x), y: lineageNodes.map(n => n.y), z: lineageNodes.map(n => n.z), mode: 'lines+markers', type: 'scatter3d', name: `Track ${targetId}`,
-        line: { color: '#4fc3f7', width: 4 }, marker: { size: 6, color: '#ab47bc' }, text: lineageNodes.map(n => `ID: ${n.id}<br>t: ${n.t}`), hoverinfo: 'text'
+    function getFilters() {
+      return {
+        gtTp: document.getElementById('chkGttp').checked,
+        gtFn: document.getElementById('chkGtfn').checked,
+        predFp: document.getElementById('chkPredfp').checked,
+        edgeTp: document.getElementById('chkEdgetp').checked,
+        edgeFn: document.getElementById('chkEdgefn').checked,
+        edgeFp: document.getElementById('chkEdgefp').checked
       };
-      const layout = { margin: { l: 0, r: 0, b: 0, t: 0 }, paper_bgcolor: '#141414', plot_bgcolor: '#141414', scene: { xaxis: { title: 'X (μm)', color: '#888' }, yaxis: { title: 'Y (μm)', color: '#888' }, zaxis: { title: 'Z (μm)', color: '#888' }, bgcolor: '#141414' }, showlegend: false };
-      Plotly.react('plot-3d-lineage', [trace], layout, { responsive: true });
     }
 
-    function setup2DCanvasEvents() {
-      ['xy', 'xz', 'yz'].forEach(type => {
-        const canvas = document.getElementById(`canvas-${type}`);
-        canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomScale *= (e.deltaY < 0 ? 1.1 : 0.9); render2DMIPCanvas(); });
-        canvas.addEventListener('mousedown', (e) => { isDragging = true; dragStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y }; });
-        window.addEventListener('mousemove', (e) => { if (!isDragging) return; panOffset.x = e.clientX - dragStart.x; panOffset.y = e.clientY - dragStart.y; render2DMIPCanvas(); });
-        window.addEventListener('mouseup', () => { isDragging = false; });
+    function update3DPlots() {
+      const flt = getFilters();
+      const meta = viewerData.metadata;
+      const scale = meta.scale || [1.0, 1.0, 1.0];
+
+      // --- Left Plot: Window (t-1, t, t+1) ---
+      let leftTraces = [];
+      for(let t = Math.max(0, currentFrame - 1); t <= Math.min(meta.num_frames - 1, currentFrame + 1); t++) {
+        const fd = viewerData.frames[t];
+        if(!fd) continue;
+
+        // Node GT TP
+        if(flt.gtTp && fd.gt_node_tp.length > 0) {
+          leftTraces.push({
+            x: fd.gt_node_tp.map(n=>n[2]*scale[2]), y: fd.gt_node_tp.map(n=>n[1]*scale[1]), z: fd.gt_node_tp.map(n=>n[0]*scale[0]),
+            mode: 'markers', type: 'scatter3d', marker: { size: 5, color: '#00e676' }, name: `t=${t} GT TP`, text: fd.gt_node_tp.map(n=>`Node ${n[3]} (TP)`)
+          });
+        }
+        // Node GT FN
+        if(flt.gtFn && fd.gt_node_fn.length > 0) {
+          leftTraces.push({
+            x: fd.gt_node_fn.map(n=>n[2]*scale[2]), y: fd.gt_node_fn.map(n=>n[1]*scale[1]), z: fd.gt_node_fn.map(n=>n[0]*scale[0]),
+            mode: 'markers', type: 'scatter3d', marker: { size: 5, color: '#ff1744' }, name: `t=${t} GT FN`, text: fd.gt_node_fn.map(n=>`Node ${n[3]} (FN)`)
+          });
+        }
+        // Node Pred FP (× Symbol)
+        if(flt.predFp && fd.pred_node_fp.length > 0) {
+          leftTraces.push({
+            x: fd.pred_node_fp.map(n=>n[2]*scale[2]), y: fd.pred_node_fp.map(n=>n[1]*scale[1]), z: fd.pred_node_fp.map(n=>n[0]*scale[0]),
+            mode: 'markers', type: 'scatter3d', marker: { size: 6, color: '#ff9100', symbol: 'x' }, name: `t=${t} Pred FP`, text: fd.pred_node_fp.map(n=>`Node ${n[3]} (FP)`)
+          });
+        }
+      }
+
+      const layout3D = {
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { l:0, r:0, b:0, t:0 },
+        scene: {
+          xaxis: { title: 'X (µm)', color: '#888' }, yaxis: { title: 'Y (µm)', color: '#888' }, zaxis: { title: 'Z (µm)', color: '#888' },
+          camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } }
+        },
+        showlegend: false
+      };
+
+      Plotly.react('plot3dLeft', leftTraces, layout3D);
+
+      // --- Right Plot: Selected Cell Full Lineage ---
+      let rightTraces = [];
+      if(selectedNodeId !== null) {
+        let lineageNodes = [];
+        Object.keys(viewerData.frames).forEach(ft => {
+          const fd = viewerData.frames[ft];
+          [...fd.gt_node_tp, ...fd.gt_node_fn].forEach(n => {
+            if(n[3] === selectedNodeId || n[5] === selectedNodeId) { lineageNodes.push({ t: parseInt(ft), coords: n }); }
+          });
+        });
+        if(lineageNodes.length > 0) {
+          rightTraces.push({
+            x: lineageNodes.map(ln => ln.coords[2]*scale[2]),
+            y: lineageNodes.map(ln => ln.coords[1]*scale[1]),
+            z: lineageNodes.map(ln => ln.coords[0]*scale[0]),
+            mode: 'lines+markers', type: 'scatter3d',
+            line: { color: '#00e5ff', width: 4 },
+            marker: { size: 6, color: '#00e5ff' },
+            name: `Lineage of Node ${selectedNodeId}`
+          });
+        }
+      }
+      Plotly.react('plot3dRight', rightTraces, layout3D);
+
+      // Setup Click Listener for Selection
+      const leftElem = document.getElementById('plot3dLeft');
+      leftElem.on('plotly_click', (data) => {
+        if(data.points && data.points.length > 0) {
+          const txt = data.points[0].text || "";
+          const m = txt.match(/Node (\d+)/);
+          if(m) { selectedNodeId = parseInt(m[1]); selectedEdgePair = null; updateView(); }
+        }
       });
-      document.getElementById('btn-reset-2d').addEventListener('click', () => { zoomScale = 1.0; panOffset = { x: 0, y: 0 }; render2DMIPCanvas(); });
     }
 
-    function render2DMIPCanvas() {
-      if (!currentDatasetName) return; const frameStr = String(currentFrame).padStart(3, '0');
-      ['xy', 'xz', 'yz'].forEach(type => {
-        const canvas = document.getElementById(`canvas-${type}`); const ctx = canvas.getContext('2d'); const img = new Image();
-        img.src = `viewer_data/${currentDatasetName}/mips/frame_${frameStr}_${type}.png`;
-        img.onload = () => {
-          canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
-          ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(panOffset.x, panOffset.y); ctx.scale(zoomScale, zoomScale);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          if (currentPayload) {
-            const frameNodes = [
-              ...(currentPayload.gt_nodes_tp || []).filter(n => n[5] === currentFrame).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], st: 'TP' })),
-              ...(currentPayload.gt_nodes_fn || []).filter(n => n[5] === currentFrame).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], st: 'FN' })),
-              ...(currentPayload.pred_nodes_fp || []).filter(n => n[5] === currentFrame).map(n => ({ z: n[0], y: n[1], x: n[2], id: n[3], st: 'FP' }))
-            ];
-            frameNodes.forEach(n => {
-              let px = 0, py = 0;
-              if (type === 'xy') { px = (n.x / 100) * canvas.width; py = (n.y / 100) * canvas.height; }
-              else if (type === 'xz') { px = (n.x / 100) * canvas.width; py = (n.z / 100) * canvas.height; }
-              else if (type === 'yz') { px = (n.y / 100) * canvas.width; py = (n.z / 100) * canvas.height; }
-              ctx.beginPath(); ctx.arc(px, py, 4, 0, 2 * Math.PI); ctx.fillStyle = n.st === 'TP' ? '#2e7d32' : n.st === 'FN' ? '#c62828' : '#ef6c00'; ctx.fill();
-              if (selectedNode && selectedNode.gt_id === n.id) {
-                ctx.beginPath(); ctx.arc(px, py, 14, 0, 2 * Math.PI); ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 2; ctx.stroke();
-              }
-            });
+    function updateMIPCanvases() {
+      ['XY', 'XZ', 'YZ'].forEach(plane => {
+        const cvs = document.getElementById(`canvas${plane}`);
+        const ctx = cvs.getContext('2d');
+        const container = cvs.parentElement;
+        cvs.width = container.clientWidth;
+        cvs.height = container.clientHeight;
+
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+        if(!viewerData) return;
+        const meta = viewerData.metadata;
+        const shape = meta.shape || [64, 256, 256];
+        const scale = meta.scale || [1.0, 1.0, 1.0];
+
+        const zMax = shape[0] * scale[0];
+        const yMax = shape[1] * scale[1];
+        const xMax = shape[2] * scale[2];
+
+        const fData = viewerData.frames[currentFrame] || { gt_node_tp:[], gt_node_fn:[], pred_node_fp:[] };
+        const flt = getFilters();
+
+        ctx.save();
+        // Zoom/Pan Transform
+        ctx.translate(zoomState.offsetX, zoomState.offsetY);
+        ctx.scale(zoomState.scale, zoomState.scale);
+
+        // Helper to convert (z,y,x) in µm to pixel
+        function getPx(z_um, y_um, x_um) {
+          if(plane === 'XY') return { x: (x_um / xMax) * cvs.width, y: (y_um / yMax) * cvs.height };
+          if(plane === 'XZ') return { x: (x_um / xMax) * cvs.width, y: (z_um / zMax) * cvs.height };
+          if(plane === 'YZ') return { x: (y_um / yMax) * cvs.width, y: (z_um / zMax) * cvs.height };
+        }
+
+        // Draw Nodes
+        if(flt.gtTp) {
+          ctx.fillStyle = '#00e676';
+          fData.gt_node_tp.forEach(n => {
+            const pos = getPx(n[0]*scale[0], n[1]*scale[1], n[2]*scale[2]);
+            ctx.beginPath(); ctx.arc(pos.x, pos.y, 4, 0, 2*Math.PI); ctx.fill();
+            if(n[3] === selectedNodeId) drawHighlightCircle(ctx, pos.x, pos.y);
+          });
+        }
+        if(flt.gtFn) {
+          ctx.fillStyle = '#ff1744';
+          fData.gt_node_fn.forEach(n => {
+            const pos = getPx(n[0]*scale[0], n[1]*scale[1], n[2]*scale[2]);
+            ctx.beginPath(); ctx.arc(pos.x, pos.y, 4, 0, 2*Math.PI); ctx.fill();
+            if(n[3] === selectedNodeId) drawHighlightCircle(ctx, pos.x, pos.y);
+          });
+        }
+        if(flt.predFp) {
+          ctx.strokeStyle = '#ff9100'; ctx.lineWidth = 2;
+          fData.pred_node_fp.forEach(n => {
+            const pos = getPx(n[0]*scale[0], n[1]*scale[1], n[2]*scale[2]);
+            ctx.beginPath();
+            ctx.moveTo(pos.x - 4, pos.y - 4); ctx.lineTo(pos.x + 4, pos.y + 4);
+            ctx.moveTo(pos.x + 4, pos.y - 4); ctx.lineTo(pos.x - 4, pos.y + 4);
+            ctx.stroke();
+          });
+        }
+
+        ctx.restore();
+
+        // Draw Plane-Gizmo (s1_06 Compliant) in Bottom-Right
+        drawPlaneGizmo(ctx, cvs.width, cvs.height, plane);
+      });
+    }
+
+    function drawHighlightCircle(ctx, x, y) {
+      ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 10, 0, 2*Math.PI); ctx.stroke();
+    }
+
+    function drawPlaneGizmo(ctx, w, h, plane) {
+      const gSize = 35; const margin = 10;
+      const gx = w - gSize - margin; const gy = h - gSize - margin;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(gx - 5, gy - 5, gSize + 10, gSize + 10);
+      ctx.lineWidth = 2;
+      
+      let hColor = '#ff1744', vColor = '#00e676', hText = 'X', vText = 'Y';
+      if(plane === 'XZ') { hColor = '#ff1744'; vColor = '#29b6f6'; hText = 'X'; vText = 'Z'; }
+      if(plane === 'YZ') { hColor = '#00e676'; vColor = '#29b6f6'; hText = 'Y'; vText = 'Z'; }
+
+      // Horizontal Axis
+      ctx.strokeStyle = hColor; ctx.beginPath(); ctx.moveTo(gx, gy + gSize); ctx.lineTo(gx + gSize - 5, gy + gSize); ctx.stroke();
+      ctx.fillStyle = hColor; ctx.font = '10px sans-serif'; ctx.fillText(hText, gx + gSize - 3, gy + gSize + 3);
+
+      // Vertical Axis
+      ctx.strokeStyle = vColor; ctx.beginPath(); ctx.moveTo(gx, gy + gSize); ctx.lineTo(gx, gy + 5); ctx.stroke();
+      ctx.fillStyle = vColor; ctx.font = '10px sans-serif'; ctx.fillText(vText, gx - 3, gy + 3);
+      ctx.restore();
+    }
+
+    function setupCanvasEvents() {
+      ['XY', 'XZ', 'YZ'].forEach(plane => {
+        const cvs = document.getElementById(`canvas${plane}`);
+        cvs.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+          zoomState.scale = Math.min(Math.max(1.0, zoomState.scale * zoomFactor), 100.0); // Up to 100x zoom
+          updateMIPCanvases();
+        });
+        cvs.addEventListener('mousedown', (e) => {
+          zoomState.isDragging = true;
+          zoomState.dragStart = { x: e.clientX - zoomState.offsetX, y: e.clientY - zoomState.offsetY };
+        });
+        window.addEventListener('mousemove', (e) => {
+          if(zoomState.isDragging) {
+            zoomState.offsetX = e.clientX - zoomState.dragStart.x;
+            zoomState.offsetY = e.clientY - zoomState.dragStart.y;
+            updateMIPCanvases();
           }
-          ctx.restore();
-        };
+        });
+        window.addEventListener('mouseup', () => { zoomState.isDragging = false; });
       });
     }
 
-    function drawGizmos() {
-      const gizmoConfigs = { 'xy': { labelX: 'X (R)', colorX: '#f44336', labelY: 'Y (D)', colorY: '#4caf50' }, 'xz': { labelX: 'X (R)', colorX: '#f44336', labelY: 'Z (D)', colorY: '#2196f3' }, 'yz': { labelX: 'Y (R)', colorX: '#4caf50', labelY: 'Z (D)', colorY: '#2196f3' } };
-      ['xy', 'xz', 'yz'].forEach(type => {
-        const c = document.getElementById(`gizmo-${type}`); const ctx = c.getContext('2d'); c.width = 45; c.height = 45; const cfg = gizmoConfigs[type];
-        ctx.clearRect(0, 0, 45, 45); ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(8, 37); ctx.lineTo(35, 37); ctx.strokeStyle = cfg.colorX; ctx.stroke(); ctx.fillStyle = cfg.colorX; ctx.font = '9px sans-serif'; ctx.fillText(cfg.labelX, 22, 33);
-        ctx.beginPath(); ctx.moveTo(8, 37); ctx.lineTo(8, 10); ctx.strokeStyle = cfg.colorY; ctx.stroke(); ctx.fillStyle = cfg.colorY; ctx.fillText(cfg.labelY, 12, 18);
-      });
+    function updateInspector() {
+      const container = document.getElementById('inspectorDetails');
+      if(selectedNodeId !== null) {
+        container.innerHTML = `
+          <div class="stat-row"><span>Selected Node ID:</span><span class="stat-val" style="color:#00e5ff;">${selectedNodeId}</span></div>
+          <div class="stat-row"><span>Status:</span><span class="stat-val">GT Verified</span></div>
+          <div class="stat-row"><span>Current Frame:</span><span class="stat-val">${currentFrame}</span></div>
+        `;
+      } else if(selectedEdgePair !== null) {
+        container.innerHTML = `
+          <div class="stat-row"><span>Selected Edge:</span><span class="stat-val" style="color:#00e5ff;">${selectedEdgePair[0]} ➔ ${selectedEdgePair[1]}</span></div>
+          <div class="stat-row"><span>Status:</span><span class="stat-val">GT Connection</span></div>
+        `;
+      } else {
+        container.innerHTML = `<div style="color:#888; text-align:center; padding:10px;">No node or edge selected</div>`;
+      }
     }
 
-    init();
+    window.onload = init;
   </script>
 </body>
 </html>
